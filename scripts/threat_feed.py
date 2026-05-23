@@ -1,23 +1,35 @@
 import requests
 
-url = "https://feodotracker.abuse.ch/downloads/ipblocklist.txt"
+feeds = [
+    "https://feodotracker.abuse.ch/downloads/ipblocklist.txt",
+    "https://rules.emergingthreats.net/blockrules/compromised-ips.txt"
+]
 
-response = requests.get(url)
+clean_ips = []
 
-if response.status_code == 200:
-    data = response.text.splitlines()
+for url in feeds:
 
-    clean_ips = []
+    response = requests.get(url)
 
-    for line in data:
-        if not line.startswith("#") and line.strip() != "":
-            clean_ips.append(line)
+    if response.status_code == 200:
 
-    with open("data/malicious_ips.txt", "w") as file:
-        for ip in clean_ips:
-            file.write(ip + "\n")
+        data = response.text.splitlines()
 
-    print("Threat feed downloaded successfully.")
+        for line in data:
 
-else:
-    print("Failed to download threat feed.")
+            if not line.startswith("#") and line.strip() != "":
+                clean_ips.append(line)
+
+        print(f"Downloaded feed: {url}")
+
+    else:
+        print(f"Failed to download: {url}")
+
+clean_ips = list(set(clean_ips))
+
+with open("data/malicious_ips.txt", "w") as file:
+
+    for ip in clean_ips:
+        file.write(ip + "\n")
+
+print("Combined threat feeds saved successfully.")
