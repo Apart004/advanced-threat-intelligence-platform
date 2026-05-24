@@ -25,7 +25,13 @@ for url in feeds:
     else:
         print(f"Failed to download: {url}")
 
+total_ips_before = len(clean_ips)
+
 clean_ips = list(set(clean_ips))
+
+total_ips_after = len(clean_ips)
+
+duplicates_removed = total_ips_before - total_ips_after
 
 with open("data/malicious_ips.txt", "w") as file:
 
@@ -33,3 +39,6 @@ with open("data/malicious_ips.txt", "w") as file:
         file.write(ip + "\n")
 
 print("Combined threat feeds saved successfully.")
+print(f"Total IPs collected: {total_ips_before}")
+print(f"Duplicates removed: {duplicates_removed}")
+print(f"Final clean IPs: {total_ips_after}")
