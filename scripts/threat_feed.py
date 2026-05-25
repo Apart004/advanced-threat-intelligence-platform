@@ -21,7 +21,7 @@ def write_log(message):
 
 for url in feeds:
 
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
 
     if response.status_code == 200:
 
