@@ -1,5 +1,6 @@
 import requests
 from datetime import datetime
+import json
 
 feeds = [
     "https://feodotracker.abuse.ch/downloads/ipblocklist.txt",
@@ -7,6 +8,7 @@ feeds = [
 ]
 
 clean_ips = []
+structured_records = []
 
 log_file = "logs/threat_feed.log"
 
@@ -30,12 +32,23 @@ for url in feeds:
         for line in data:
 
             if not line.startswith("#") and line.strip() != "":
+
                 clean_ips.append(line)
+
+                record = {
+                    "ip": line,
+                    "source": url,
+                    "status": "malicious",
+                    "collected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+
+                structured_records.append(record)
 
         print(f"Downloaded feed: {url}")
         write_log(f"Successfully downloaded feed: {url}")
 
     else:
+
         print(f"Failed to download: {url}")
         write_log(f"Failed to download feed: {url}")
 
@@ -53,6 +66,11 @@ with open("data/malicious_ips.txt", "w") as file:
 
     for ip in clean_ips:
         file.write(ip + "\n")
+
+
+with open("data/threat_records.json", "w") as json_file:
+
+    json.dump(structured_records, json_file, indent=4)
 
 
 print("Combined threat feeds saved successfully.")
