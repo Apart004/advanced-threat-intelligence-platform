@@ -9,6 +9,7 @@ feeds = [
 
 clean_ips = []
 structured_records = []
+source_counts = {}
 
 log_file = "logs/threat_feed.log"
 
@@ -29,11 +30,15 @@ for url in feeds:
 
         data = response.text.splitlines()
 
+        source_counts[url] = 0
+
         for line in data:
 
             if not line.startswith("#") and line.strip() != "":
 
                 clean_ips.append(line)
+
+                source_counts[url] += 1
 
                 record = {
                     "ip": line,
@@ -73,12 +78,22 @@ with open("data/threat_records.json", "w") as json_file:
     json.dump(structured_records, json_file, indent=4)
 
 
-print("Combined threat feeds saved successfully.")
+print("\n--- Threat Intelligence Analytics ---")
 print(f"Total IPs collected: {total_ips_before}")
 print(f"Duplicates removed: {duplicates_removed}")
 print(f"Final clean IPs: {total_ips_after}")
 
+for source, count in source_counts.items():
+    print(f"{source} -> {count} records")
+
+
+print("\nCombined threat feeds saved successfully.")
+
 write_log(f"Total IPs collected: {total_ips_before}")
 write_log(f"Duplicates removed: {duplicates_removed}")
 write_log(f"Final clean IPs: {total_ips_after}")
+
+for source, count in source_counts.items():
+    write_log(f"{source} -> {count} records")
+
 write_log("Threat feed processing completed successfully")
