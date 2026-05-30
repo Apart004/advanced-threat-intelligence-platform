@@ -18,3 +18,11 @@
 [2026-05-29 16:58:38] https://feodotracker.abuse.ch/downloads/ipblocklist.txt -> 5 records
 [2026-05-29 16:58:38] https://rules.emergingthreats.net/blockrules/compromised-ips.txt -> 546 records
 [2026-05-29 16:58:38] Threat feed processing completed successfully
+[2026-05-30 16:15:43] Successfully downloaded feed: https://feodotracker.abuse.ch/downloads/ipblocklist.txt
+[2026-05-30 16:15:45] Successfully downloaded feed: https://rules.emergingthreats.net/blockrules/compromised-ips.txt
+[2026-05-30 16:15:45] Total IPs collected: 545
+[2026-05-30 16:15:45] Duplicates removed: 0
+[2026-05-30 16:15:45] Final clean IPs: 545
+[2026-05-30 16:15:45] https://feodotracker.abuse.ch/downloads/ipblocklist.txt -> 5 records
+[2026-05-30 16:15:45] https://rules.emergingthreats.net/blockrules/compromised-ips.txt -> 540 records
+[2026-05-30 16:15:45] Threat feed processing completed successfully

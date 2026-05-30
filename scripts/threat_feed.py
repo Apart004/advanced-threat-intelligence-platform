@@ -40,10 +40,20 @@ for url in feeds:
 
                 source_counts[url] += 1
 
+                # Risk scoring logic
+                if "abuse.ch" in url:
+                    risk_score = 95
+                    severity = "High"
+                else:
+                    risk_score = 80
+                    severity = "Medium"
+
                 record = {
                     "ip": line,
                     "source": url,
                     "status": "malicious",
+                    "risk_score": risk_score,
+                    "severity": severity,
                     "collected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
 
@@ -85,7 +95,6 @@ print(f"Final clean IPs: {total_ips_after}")
 
 for source, count in source_counts.items():
     print(f"{source} -> {count} records")
-
 
 print("\nCombined threat feeds saved successfully.")
 
