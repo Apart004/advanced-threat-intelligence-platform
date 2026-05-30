@@ -1,108 +1,89 @@
+import os
 import requests
-from datetime import datetime
-import json
+from datetime import datetime, timezone
+from dotenv import load_dotenv
+from pymongo import MongoClient, errors
 
-feeds = [
-    "https://feodotracker.abuse.ch/downloads/ipblocklist.txt",
-    "https://rules.emergingthreats.net/blockrules/compromised-ips.txt"
-]
+# Load environment variables securely from our hidden .env file
+load_dotenv()
 
-clean_ips = []
-structured_records = []
-source_counts = {}
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+DB_NAME = os.getenv("DB_NAME", "threat_intel_db")
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "indicators")
 
-log_file = "logs/threat_feed.log"
+def get_db_connection():
+    """Establishes a connection to the MongoDB container instance."""
+    try:
+        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=2000)
+        client.server_info() # Test connection stability
+        db = client[DB_NAME]
+        return db[COLLECTION_NAME]
+    except errors.ServerSelectionTimeoutError:
+        print("[!] Database offline. Defaulting to local logging backup.")
+        return None
 
+def save_to_mongodb(ip_list, source_url):
+    """Iterates through scraped IPs, enforces deduplication, and stores to Mongo."""
+    collection = get_db_connection()
+    if collection is None:
+        return False
 
-def write_log(message):
+    duplicates_skipped = 0
+    newly_inserted = 0
 
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    for ip in ip_list:
+        ip = ip.strip()
+        if not ip or ip.startswith("#"):
+            continue
 
-    with open(log_file, "a") as log:
-        log.write(f"[{timestamp}] {message}\n")
+        # Enforce database deduplication as required by company standards
+        existing = collection.find_one({"indicator": ip})
+        if existing:
+            duplicates_skipped += 1
+            continue
 
+        # Create structured JSON threat envelope matrix using modern UTC timestamps
+        threat_record = {
+            "indicator": ip,
+            "type": "ip",
+            "source": source_url,
+            "timestamp": datetime.now(timezone.utc),  # Fixed deprecation warning
+            "status": "active"
+        }
+        
+        try:
+            collection.insert_one(threat_record)
+            newly_inserted += 1
+        except Exception as e:
+            print(f"[-] Insertion failure: {e}")
 
-for url in feeds:
+    print(f"\n[{source_url}] Database Sync completed.")
+    print(f"   -> Records Newly Cataloged: {newly_inserted}")
+    print(f"   -> Duplicates Filtered: {duplicates_skipped}")
+    return True
 
-    response = requests.get(url, timeout=10)
+def fetch_feeds():
+    """Your core scraping execution workflow."""
+    urls = [
+        "https://feodotracker.abuse.ch/downloads/ipblocklist.txt",
+        "https://rules.emergingthreats.net/blockrules/compromised-ips.txt"
+    ]
+    
+    for url in urls:
+        try:
+            print(f"Downloading feed: {url}")
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                # Split raw text into individual IP lines
+                ips = response.text.splitlines()
+                # Clean up and filter out comment lines
+                clean_ips = [ip.strip() for ip in ips if ip.strip() and not ip.startswith("#")]
+                
+                # Direct data to MongoDB instead of flat local data text files
+                save_to_mongodb(clean_ips, url)
+        except Exception as e:
+            print(f"[-] Error tracking feed processing: {e}")
 
-    if response.status_code == 200:
-
-        data = response.text.splitlines()
-
-        source_counts[url] = 0
-
-        for line in data:
-
-            if not line.startswith("#") and line.strip() != "":
-
-                clean_ips.append(line)
-
-                source_counts[url] += 1
-
-                # Risk scoring logic
-                if "abuse.ch" in url:
-                    risk_score = 95
-                    severity = "High"
-                else:
-                    risk_score = 80
-                    severity = "Medium"
-
-                record = {
-                    "ip": line,
-                    "source": url,
-                    "status": "malicious",
-                    "risk_score": risk_score,
-                    "severity": severity,
-                    "collected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                }
-
-                structured_records.append(record)
-
-        print(f"Downloaded feed: {url}")
-        write_log(f"Successfully downloaded feed: {url}")
-
-    else:
-
-        print(f"Failed to download: {url}")
-        write_log(f"Failed to download feed: {url}")
-
-
-total_ips_before = len(clean_ips)
-
-clean_ips = list(set(clean_ips))
-
-total_ips_after = len(clean_ips)
-
-duplicates_removed = total_ips_before - total_ips_after
-
-
-with open("data/malicious_ips.txt", "w") as file:
-
-    for ip in clean_ips:
-        file.write(ip + "\n")
-
-
-with open("data/threat_records.json", "w") as json_file:
-
-    json.dump(structured_records, json_file, indent=4)
-
-
-print("\n--- Threat Intelligence Analytics ---")
-print(f"Total IPs collected: {total_ips_before}")
-print(f"Duplicates removed: {duplicates_removed}")
-print(f"Final clean IPs: {total_ips_after}")
-
-for source, count in source_counts.items():
-    print(f"{source} -> {count} records")
-
-print("\nCombined threat feeds saved successfully.")
-
-write_log(f"Total IPs collected: {total_ips_before}")
-write_log(f"Duplicates removed: {duplicates_removed}")
-write_log(f"Final clean IPs: {total_ips_after}")
-
-for source, count in source_counts.items():
-    write_log(f"{source} -> {count} records")
-
-write_log("Threat feed processing completed successfully")
+if __name__ == "__main__":
+    print("--- Starting Threat Intelligence Aggregator Core ---")
+    fetch_feeds()
