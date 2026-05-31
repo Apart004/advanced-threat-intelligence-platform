@@ -1,0 +1,12 @@
+services:
+  # Ingestion Database Layer (Week 1 Directive)
+  mongodb:
+    image: mongo:latest
+    container_name: tip_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
