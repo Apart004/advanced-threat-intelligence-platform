@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:latest
@@ -25,6 +23,16 @@ services:
       - "5601:5601"
     depends_on:
       - elasticsearch
+
+  enforcer:
+    build:
+      context: .
+      dockerfile: Dockerfile.enforcer
+    container_name: tip_enforcer
+    depends_on:
+      - mongodb
+    cap_add:
+      - NET_ADMIN
 
 volumes:
   mongo_data:
