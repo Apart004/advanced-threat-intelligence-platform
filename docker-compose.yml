@@ -1,5 +1,6 @@
+version: '3.8'
+
 services:
-  # Ingestion Database Layer (Week 1 Directive)
   mongodb:
     image: mongo:latest
     container_name: tip_mongodb
@@ -7,6 +8,23 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    container_name: tip_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.10
+    container_name: tip_kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
 
 volumes:
   mongo_data:
