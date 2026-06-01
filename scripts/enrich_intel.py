@@ -12,18 +12,16 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME", "indicators")
 
 # Core Evaluation Rules: Reliability weights assigned to OSINT sources
 SOURCE_WEIGHTS = {
-    "https://feodotracker.abuse.ch/downloads/ipblocklist.txt": 0.9,  # High precision Botnet/C2 tracker
-    "https://rules.emergingthreats.net/blockrules/compromised-ips.txt": 0.6  # Broader compromised host list
+    "https://feodotracker.abuse.ch/downloads/ipblocklist.txt": 0.9,
+    "https://rules.emergingthreats.net/blockrules/compromised-ips.txt": 0.6,
+    "https://otx.alienvault.com": 0.8
 }
 
-def calculate_risk_score(source_url):
-    """
-    Calculates a normalized risk score from 0.0 to 10.0.
-    Formula base: (Source Weight * 10) capped mathematically at 10.0.
-    """
-    weight = SOURCE_WEIGHTS.get(source_url, 0.5)  # Default to 0.5 for unknown sources
-    score = weight * 10.0
-    return round(score, 1)
+def calculate_risk_score(source_url, malicious_count=0):
+    weight = SOURCE_WEIGHTS.get(source_url, 0.5)
+    # Boost score if VirusTotal confirms malicious detections
+    bonus = min(malicious_count * 0.3, 3.0)
+    return round(min((weight * 10.0) + bonus, 10.0), 1)
 
 def enrich_and_normalize():
     """Extracts raw unnormalized indicators, applies scoring, and updates documents."""
@@ -42,7 +40,7 @@ def enrich_and_normalize():
     print("[*] Initiating Risk-Scoring Optimization Engine...")
 
     for record in unprocessed_indicators:
-        record_id = record["_key"] if "_key" in record else record["_id"]
+        record_id = record["_id"]
         source = record.get("source", "Unknown")
         
         # Calculate dynamic matrix scores
