@@ -44,13 +44,17 @@ def sync_enforcement_logs(es, collection):
         if es.exists(index=ES_LOGS_INDEX, id=doc_id):
             skipped += 1
             continue
+        risk = record.get("risk_score", 0)
+        rolled = record.get("rolled_back", False)
         doc = {
-            "ip":            record.get("ip", ""),
-            "action":        record.get("action", "BLOCK"),
-            "risk_score":    record.get("risk_score", 0),
-            "source":        record.get("source", ""),
-            "rolled_back":   record.get("rolled_back", False),
-            "timestamp":     record.get("timestamp", datetime.now(timezone.utc)).isoformat()
+            "ip":             record.get("ip", ""),
+            "action":         record.get("action", "BLOCK"),
+            "risk_score":     risk,
+            "source":         record.get("source", ""),
+            "rolled_back":    rolled,
+            "severity":       "Critical" if risk >= 9 else "High" if risk >= 8 else "Medium",
+            "blocked_status": "Rolled Back" if rolled else "Blocked",
+            "timestamp":      record.get("timestamp", datetime.now(timezone.utc)).isoformat()
         }
         es.index(index=ES_LOGS_INDEX, id=doc_id, document=doc)
         synced += 1
