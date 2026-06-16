@@ -162,7 +162,7 @@ Open **http://localhost:5601** and navigate to **Threat Intelligence Overview** 
 | Threats by Source | Pie chart showing IoC distribution by feed |
 | Threats by Risk Score | Bar chart of risk score distribution |
 | Blocked IPs Log | Table of all blocked IPs with scores |
-| Total Threats | Total indicator count (732+) |
+| Total Threats | Total indicator count (825+) |
 | High Risk Threats | Count of IPs scoring ≥ 8.0 |
 
 ---
@@ -209,7 +209,7 @@ RISK_THRESHOLD=8.0
 
 ## Current Stats
 
-- **732+** threat indicators ingested
+- **825+** threat indicators ingested
 - **3** OSINT feed sources
 - **5** high-risk IPs identified and blocked
 - **5** enforcement log entries with severity labels
